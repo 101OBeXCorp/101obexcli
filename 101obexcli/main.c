@@ -17,10 +17,14 @@
 #include <pwd.h>
 #include <unistd.h>
 #else
+#ifndef linux
 #include <windows.h>
 #include <Shlobj.h>
 #define _CRT_SECURE_NO_WARNINGS
 #endif
+#endif
+
+
 
 char* TESTTOKEN = "{'access_token':'ya29.a0AeTM1ifzc1V1mx6nF-4ETdiRHx-S_l6aYaSt0nabcD6M7sHSP091ze5Gu_G4uBhxahpogOX62d84cwP7mMz5dFD0toF0C8zsTQ5QC4QR9tkz7AjV3LMtNIRr91PO8fkhjTqbGTz3IFG4EcOnjx1Uq-1VyghIaCgYKAUwSARESFQHWtWOmPZ_IzAQ6XGY_1QsOpGPV-Q0163','expires_in':3599,'refresh_token':'1//03tFX_HL0S2NKCgYIARAAGAMSNwF-L9IrAogNS-YfK8SLLD0oSuGuZ4oxNKlip28HqZlFLRbkuBS4dA5OaSKui7SMrKggS8RTyVs','scope':'https://www.googleapis.com/auth/cloud-platform','token_type':'Bearer'}";
 
@@ -159,17 +163,11 @@ int manage_token(int u) {
     struct passwd* pw = getpwuid(getuid());
     const char* homedir = pw->pw_dir;
 #else
-    char* homedir;
-    char homeDirStr[MAX_PATH];
-    if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, homeDirStr))) {
-    
-        homedir = "";
-        printf("\n\n\n>%s\n\n\n\n", homeDirStr);
-    }
-    else {
-        homedir = "";
-        printf("NODIR");
-    }
+#ifndef linux
+    const char* homedir = getenv("USERPROFILE");
+#else
+    const char* homedir = getenv("HOME");
+#endif
 #endif
     
     configfile[0] = '\0';
@@ -287,7 +285,16 @@ int register_token(int u)
         }
 
         printf("Please identify in your browser\n");
+#ifdef __APPLE__
         system("open 'https://accounts.google.com/o/oauth2/v2/auth?client_id=578114581231-jaa6ncsp7bv06dra7g59vpfvb6736sea.apps.googleusercontent.com&response_type=code&scope=https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile&access_type=offline&redirect_uri=urn:ietf:wg:oauth:2.0:oob'");
+#else
+#ifndef linux
+        system("cmd /c start \"\" \"https://accounts.google.com/o/oauth2/v2/auth?client_id=578114581231-jaa6ncsp7bv06dra7g59vpfvb6736sea.apps.googleusercontent.com&response_type=code&scope=https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile&access_type=offline&redirect_uri=urn:ietf:wg:oauth:2.0:oob\"");
+#else
+        system("open 'https://accounts.google.com/o/oauth2/v2/auth?client_id=578114581231-jaa6ncsp7bv06dra7g59vpfvb6736sea.apps.googleusercontent.com&response_type=code&scope=https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile&access_type=offline&redirect_uri=urn:ietf:wg:oauth:2.0:oob' >> /dev/null 2>&1");
+#endif
+#endif
+        
         printf("And paste the code you received here: ");
 
         scanf("%s", string);
@@ -308,6 +315,7 @@ int register_token(int u)
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &strbuf);
         curl_easy_setopt(curl, CURLOPT_URL, str);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
 
         res = curl_easy_perform(curl);
 
@@ -336,14 +344,11 @@ int register_token(int u)
         struct passwd* pw = getpwuid(getuid());
         const char* homedir = pw->pw_dir;
 #else
-        const char* homedir = "";
-        char homeDirStr[MAX_PATH];
-        if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, homeDirStr))) {
-            // Do something with the path
-        }
-        else {
-            // Do something else
-        }
+#ifndef linux
+        const char* homedir = getenv("USERPROFILE");
+#else
+        const char* homedir = getenv("HOME");
+#endif
 #endif
 
         configfile[0] = '\0';
